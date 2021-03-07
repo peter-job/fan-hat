@@ -3,6 +3,7 @@
 
 from drivers.SSD1306 import SSD1306
 from drivers.PCA9685 import PCA9685
+from datetime import datetime
 import time
 import traceback
 import socket
@@ -21,7 +22,6 @@ def getIp(ipVersion):
 		ip = s.getsockname()[0]
 	elif ipVersion == IpVersion.Internal:
 		ip = requests.get('https://checkip.amazonaws.com').text.strip()
-		print("public:%s" %ip)
 	return ip
 
 def toggleIpVersion(ipVersion):
@@ -62,15 +62,12 @@ try:
 	ip = getIp(ipVersion)
 	ticks = 0
 	while(1):
-		ticks += 1
 		draw.rectangle((0,0,128,32), fill = 1)
 
 		# get ip
-		if ticks >= 4:
-			ticks = 0
+		if ticks % 4 == 0:
 			ipVersion = toggleIpVersion(ipVersion)
 			ip = getIp(ipVersion)
-			print("ip:%s" %ip)
 		draw.text((0,0), "IP:", font=font, fill = 0)
 		draw.text((20,0), ip, font=font, fill = 0)
 
@@ -81,7 +78,6 @@ try:
 		temp = float(file.read()) / 1000.00  
 		temp = float('%.1f' % temp)
 		file.close()
-		print("temp : %.1f" %temp)
 		draw.text((14,16), str(temp), font=font, fill = 0)
 				
 		# get cpu usage
@@ -108,7 +104,25 @@ try:
 			pwm.setServoPulse(0,0)
 		#show
 		oled.ShowImage(oled.getbuffer(image1.rotate(180)))
+
+		#log
+		if ticks % 300 == 0:
+			ticks = 0
+			publicIp = getIp(IpVersion.Public)
+			privateIp = getIp(IpVersion.Internal)
+			now = datetime.now()
+			current_time = now.strftime("%I:%M %p")
+			print("fan HAT update @ %s" %current_time)
+			print("public ip:   %s" %publicIp)
+			print("private ip:  %s" %privateIp)
+			print("temperature: %.1f" %temp)
+			print("ram usage:   %s" %str(ram))
+			print("cpu usage:   %s" %str(cpu))
+			print("\n")
+
+		#sleep
 		time.sleep(1)
+		ticks += 1
 		
 
 
